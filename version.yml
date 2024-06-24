@@ -1,0 +1,23 @@
+- name: Vérifier si Nginx est installé et obtenir sa version
+  hosts: test
+  tasks:
+    - name: Vérifier si Nginx est installé
+      command: nginx -v
+      register: nginx_version_output
+      ignore_errors: yes
+
+    - name: Vérifier la sortie de la commande nginx -v
+      debug:
+        msg: "Nginx n'est pas installé"
+      when: nginx_version_output.failed
+
+    - name: Extraire la version de Nginx
+      command: nginx -v
+      register: nginx_version_output
+      changed_when: false
+      failed_when: nginx_version_output.rc != 0
+
+    - name: Afficher la version de Nginx
+      debug:
+        msg: "Version de Nginx: {{ nginx_version_output.stderr.split('/')[1] }}"
+      when: nginx_version_output.rc == 0
