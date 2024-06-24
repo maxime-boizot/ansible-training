@@ -1,0 +1,17 @@
+- name: Vérifier si un fichier contient une valeur spécifique
+  hosts: test
+  tasks:
+    - name: Rechercher le motif dans le fichier
+      command: grep -q 'toto' /root/coucou.txt  # "toto" return false 'ut' return true
+      register: grep_result
+      ignore_errors: yes
+
+    - name: Afficher le résultat si le motif est trouvé
+      debug:
+        msg: "La ligne est présente dans le fichier"
+      when: grep_result.rc == 0
+
+    - name: Afficher le résultat si le motif n'est pas trouvé
+      debug:
+        msg: "La ligne n'est pas présente dans le fichier"
+      when: grep_result.rc != 0

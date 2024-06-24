@@ -1,0 +1,11 @@
+- name: Vérifier si un fichier contient une valeur spécifique
+  hosts: test
+  tasks:
+    - name: check status of service
+      shell: systemectl status nginx
+      register: status
+    
+    - name: msg is active
+      debug:
+        msg: "service is active"
+      when: status.stdout.find('active') != -1
