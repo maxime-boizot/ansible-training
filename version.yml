@@ -11,13 +11,7 @@
         msg: "Nginx n'est pas installé"
       when: nginx_version_output.failed
 
-    - name: Extraire la version de Nginx
-      command: nginx -v
-      register: nginx_version_output
-      changed_when: false
-      failed_when: nginx_version_output.rc != 0
-
     - name: Afficher la version de Nginx
       debug:
-        msg: "Version de Nginx: {{ nginx_version_output.stderr.split('/')[1] }}"
+        msg: "Version de Nginx: {{ nginx_version_output.stderr }}"
       when: nginx_version_output.rc == 0
