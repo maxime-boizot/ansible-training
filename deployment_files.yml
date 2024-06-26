@@ -1,19 +1,19 @@
 - name: deployment of files
-  hosts: test
+  hosts: test # mon groupe avec slave 1
   tasks:
     - name: check if the file exists
       ansible.builtin.stat:
-        path: "/etc/copie.txt"
+        path: "/etc/copie.txt" # on verifier si le fichier existe
       register: file_status
 
     - name: return file exists
       debug:
-        msg: "file exists"
+        msg: "file exists" # le fichier existe youhou :)
       when: file_status.stat.exists
 
     - name: file does not exists
       debug:
-        msg: "files does not exists and will be deployed"
+        msg: "files does not exists and will be deployed" # exsiste pas :'(
       when: file_status.stat.exists == False
 
     - name: Copy file
@@ -21,10 +21,10 @@
         src: /root/copie.txt
         dest: /etc/
       register: copy_result
-      when: file_status.stat.exists == False
+      when: file_status.stat.exists == False # deploiement du fichier uniquement si il n'existe pas sinon ça skip la tache
     
     - name: Get the md5sum of a file on slave1
-      command: md5sum /etc/copie.txt  # check md5sum on slave1
+      command: md5sum /etc/copie.txt  # recup md5sum on slave1
       register: file_md5_1
 
     - name: Set fact for md5sum on slave1
@@ -38,7 +38,7 @@
 
 - name: Get md5sum of a file on localhost and share it
   hosts: localhost
-  connection: local
+  connection: local #ici on bascule sur la master pour check le md5sum
   tasks:
     - name: Get the md5sum of a file on localhost
       command: md5sum /root/copie.txt # check md5sum on localhost
@@ -47,11 +47,6 @@
     - name: Set fact for md5sum on localhost
       set_fact:
         md5sum_localhost: "{{ file_md5_2.stdout.split(' ')[0] }}"  # set fact for md5sum on localhost
-
-    - name: Share md5sum of localhost with localhost
-      add_host:
-        name: localhost
-        md5sum_localhost: "{{ md5sum_localhost }}"  # share md5sum of localhost with localhost
 
     - name: Display the md5sum of the file on slave1
       debug:
@@ -64,22 +59,22 @@
     - name: Display if it's the same version of the file
       debug:
         msg: "It's the same version of the file"
-      when: hostvars['localhost']['md5sum_slave1'] == hostvars['localhost']['md5sum_localhost']
+      when: hostvars['localhost']['md5sum_slave1'] == hostvars['localhost']['md5sum_localhost'] # si les md5sum sont identiques
 
     - name: Display if it's not the same version of the file
       debug:
         msg: "It's not the same version of the file"
-      when: hostvars['localhost']['md5sum_slave1'] != hostvars['localhost']['md5sum_localhost']
+      when: hostvars['localhost']['md5sum_slave1'] != hostvars['localhost']['md5sum_localhost'] # si les md5sum sont differents
   
-- name: return on slave 1
+- name: return on slave 1 # on retourne sur slave 1
   hosts: test
   tasks:
-    - name: rename old version
-      command: mv /etc/copie.txt /etc/copie.txt.old
+    - name: rename old version # si il sont different on rename l'ancienne version
+      command: mv /etc/copie.txt /etc/copie.txt.old 
       when: hostvars['localhost']['md5sum_slave1'] != hostvars['localhost']['md5sum_localhost']
 
-    - name: deploy new version of file
+    - name: deploy new version of file # on deploie la nouvelle version
       ansible.builtin.copy:
         src: /root/copie.txt
-        dest: /etc/
+        dest: /etc/ 
       when: hostvars['localhost']['md5sum_slave1'] != hostvars['localhost']['md5sum_localhost']
