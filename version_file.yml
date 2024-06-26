@@ -1,33 +1,48 @@
-- name: get md5sum of a file
-  hosts: test
+- name: Get md5sum of a file on slave1 and share it
+  hosts: slave1
   tasks:
-  - name: Get the md5sum of a file
-    command: md5sum /etc/copie.txt
-    register: file_md5_1
+    - name: Get the md5sum of a file on slave1
+      command: md5sum /etc/copie.txt
+      register: file_md5_1
 
-  - name: Set fact for md5sum on test host
-    set_fact:
-      md5sum_test_host: "{{ file_md5_1.stdout.split(' ')[0] }}"
+    - name: Set fact for md5sum on slave1
+      set_fact:
+        md5sum_slave1: "{{ file_md5_1.stdout.split(' ')[0] }}"
 
-- hosts: localhost
+    - name: Share md5sum of slave1 with localhost
+      add_host:
+        name: localhost
+        md5sum_slave1: "{{ md5sum_slave1 }}"
+
+- name: Get md5sum of a file on slave2 and share it
+  hosts: slave2
   tasks:
-  - name: Get the md5sum of a file
-    command: md5sum /root/copie.txt
-    register: file_md5_2
+    - name: Get the md5sum of a file on slave2
+      command: md5sum /root/copie.txt
+      register: file_md5_2
 
-  - name: Set fact for md5sum on localhost
-    set_fact:
-      md5sum_localhost: "{{ file_md5_2.stdout.split(' ')[0] }}"
+    - name: Set fact for md5sum on slave2
+      set_fact:
+        md5sum_slave2: "{{ file_md5_2.stdout.split(' ')[0] }}"
 
-  - name: Display the md5sum of the file 1
-    debug:
-      msg: "The md5sum of the file is {{ hostvars['test']['md5sum_test_host'] }}"
+    - name: Share md5sum of slave2 with localhost
+      add_host:
+        name: localhost
+        md5sum_slave2: "{{ md5sum_slave2 }}"
 
-  - name: Display the md5sum of the file 2
-    debug:
-      msg: "The md5sum of the file is {{ md5sum_localhost }}"
-  
-  - name: display it's the same or not
-    debug:
-      msg: "it's the same version of the file"
-    when:  == {{ md5sum_localhost }} == {{ hostvars['test']['md5sum_test_host'] }}
+- name: Compare md5sum between slave1 and slave2
+  hosts: localhost
+  connection: local
+  tasks:
+    - name: Display the md5sum of the file on slave1
+      debug:
+        msg: "The md5sum of the file on slave1 is {{ hostvars['localhost']['md5sum_slave1'] }}"
+
+    - name: Display the md5sum of the file on slave2
+      debug:
+        msg: "The md5sum of the file on slave2 is {{ hostvars['localhost']['md5sum_slave2'] }}"
+
+    - name: Display if it's the same version of the file
+      debug:
+        msg: "It's the same version of the file"
+      when: hostvars['localhost']['md5sum_slave1'] == hostvars['localhost']['md5sum_slave2']
