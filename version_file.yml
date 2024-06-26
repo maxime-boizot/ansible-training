@@ -3,22 +3,31 @@
   tasks:
   - name: Get the md5sum of a file
     command: md5sum /etc/copie.txt
-    register: file_md5-1
+    register: file_md5_1
 
-  - name: Display the md5sum of the file
-    debug:
-      msg: "The md5sum of the file is {{ file_stat.stdout.split(' ')[0]}}"
-      
-  
+  - name: Set fact for md5sum on test host
+    set_fact:
+      md5sum_test_host: "{{ file_md5_1.stdout.split(' ')[0] }}"
 
 - hosts: localhost
   tasks:
   - name: Get the md5sum of a file
     command: md5sum /root/copie.txt
-    register: file_md5-2
+    register: file_md5_2
 
-  - name: Display the md5sum of the file
+  - name: Set fact for md5sum on localhost
+    set_fact:
+      md5sum_localhost: "{{ file_md5_2.stdout.split(' ')[0] }}"
+
+  - name: Display the md5sum of the file 1
     debug:
-      msg: "The md5sum of the file is {{ file_md5-2.stdout.split(' ')[0]}}"
+      msg: "The md5sum of the file is {{ hostvars['test']['md5sum_test_host'] }}"
 
-   
+  - name: Display the md5sum of the file 2
+    debug:
+      msg: "The md5sum of the file is {{ md5sum_localhost }}"
+  
+  - name: display it's the same or not
+    debug:
+      msg: "it's the same version of the file"
+    when:  == {{ md5sum_localhost }} == {{ hostvars['test']['md5sum_test_host'] }}
