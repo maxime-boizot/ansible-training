@@ -8,7 +8,7 @@
 
     - name: return file exists
       debug:
-        msg: "file exists and will be updated if needed"
+        msg: "file exists"
       when: file_status.stat.exists
 
     - name: file does not exists
@@ -21,8 +21,65 @@
         src: /root/copie.txt
         dest: /etc/
       register: copy_result
+      when: file_status.stat.exists == False
+    
+    - name: Get the md5sum of a file on slave1
+      command: md5sum /etc/copie.txt  # check md5sum on slave1
+      register: file_md5_1
 
-    - name: Display the result of the copy
+    - name: Set fact for md5sum on slave1
+      set_fact:
+        md5sum_slave1: "{{ file_md5_1.stdout.split(' ')[0] }}"  # set fact for md5sum on slave1
+
+    - name: Share md5sum of slave1 with localhost
+      add_host:
+        name: localhost
+        md5sum_slave1: "{{ md5sum_slave1 }}"  # share md5sum of slave1 with localhost
+
+- name: Get md5sum of a file on localhost and share it
+  hosts: localhost
+  connection: local
+  tasks:
+    - name: Get the md5sum of a file on localhost
+      command: md5sum /root/copie.txt # check md5sum on localhost
+      register: file_md5_2
+
+    - name: Set fact for md5sum on localhost
+      set_fact:
+        md5sum_localhost: "{{ file_md5_2.stdout.split(' ')[0] }}"  # set fact for md5sum on localhost
+
+    - name: Share md5sum of localhost with localhost
+      add_host:
+        name: localhost
+        md5sum_localhost: "{{ md5sum_localhost }}"  # share md5sum of localhost with localhost
+
+    - name: Display the md5sum of the file on slave1
       debug:
-        msg: "the file has already up to date"
-      when: copy_result.changed == False
+        msg: "The md5sum of the file on slave1 is {{ hostvars['localhost']['md5sum_slave1'] }}" # display the md5sum of the file on slave1
+
+    - name: Display the md5sum of the file on localhost
+      debug:
+        msg: "The md5sum of the file on localhost is {{ hostvars['localhost']['md5sum_localhost'] }}" # display the md5sum of the file on localhost
+
+    - name: Display if it's the same version of the file
+      debug:
+        msg: "It's the same version of the file"
+      when: hostvars['localhost']['md5sum_slave1'] == hostvars['localhost']['md5sum_localhost']
+
+    - name: Display if it's not the same version of the file
+      debug:
+        msg: "It's not the same version of the file"
+      when: hostvars['localhost']['md5sum_slave1'] != hostvars['localhost']['md5sum_localhost']
+  
+- name: return on slave 1
+  hosts: test
+  tasks:
+    - name: rename old version
+      command: mv /etc/copie.txt /etc/copie.txt.old
+      when: hostvars['localhost']['md5sum_slave1'] != hostvars['localhost']['md5sum_localhost']
+
+    - name: deploy new version of file
+      ansible.builtin.copy:
+        src: /root/copie.txt
+        dest: /etc/
+      when: hostvars['localhost']['md5sum_slave1'] != hostvars['localhost']['md5sum_localhost']
