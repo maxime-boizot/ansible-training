@@ -1,0 +1,22 @@
+- name: deployment of files
+  hosts: test
+  tasks:
+    - name: check if the file exists
+      ansible.builtin.stat:
+        path: /root/toto.txt
+      register: file_status
+
+    - name: return file exists
+      debug:
+        msg: "file exists"
+      when: file_status.stat.exists
+
+    - name: file does not exists
+      debug:
+        msg: "files does not exists"
+      when: file_status.stat.exists == False
+
+
+    # - name : display the result if the file exists
+    #   debug:
+    #     var: file_status

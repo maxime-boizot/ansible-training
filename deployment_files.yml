@@ -1,0 +1,28 @@
+- name: deployment of files
+  hosts: test
+  tasks:
+    - name: check if the file exists
+      ansible.builtin.stat:
+        path: "/etc/copie.txt"
+      register: file_status
+
+    - name: return file exists
+      debug:
+        msg: "file exists and will be updated if needed"
+      when: file_status.stat.exists
+
+    - name: file does not exists
+      debug:
+        msg: "files does not exists and will be deployed"
+      when: file_status.stat.exists == False
+
+    - name: Copy file
+      ansible.builtin.copy:
+        src: /root/copie.txt
+        dest: /etc/
+      register: copy_result
+
+    - name: Display the result of the copy
+      debug:
+        msg: "the file has already up to date"
+      when: copy_result.changed == False

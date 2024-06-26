@@ -1,0 +1,24 @@
+- name: get md5sum of a file
+  hosts: test
+  tasks:
+  - name: Get the md5sum of a file
+    command: md5sum /etc/copie.txt
+    register: file_md5-1
+
+  - name: Display the md5sum of the file
+    debug:
+      msg: "The md5sum of the file is {{ file_stat.stdout.split(' ')[0]}}"
+      
+  
+
+- hosts: localhost
+  tasks:
+  - name: Get the md5sum of a file
+    command: md5sum /root/copie.txt
+    register: file_md5-2
+
+  - name: Display the md5sum of the file
+    debug:
+      msg: "The md5sum of the file is {{ file_md5-2.stdout.split(' ')[0]}}"
+
+   

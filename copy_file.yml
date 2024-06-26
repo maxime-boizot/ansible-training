@@ -1,0 +1,12 @@
+- name: copi a file
+  hosts: test
+  tasks:
+  - name: Copy file with owner and permissions
+    ansible.builtin.copy:
+      src: /root/copie.txt
+      dest: /etc/
+    register: copy_result
+
+  - name: Display the result of the copy
+    debug:
+      var: copy_result
