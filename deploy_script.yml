@@ -1,0 +1,144 @@
+- name: Deploy scripts and configurations
+  hosts: all
+  vars:
+    folder: "/root/host_deploy"
+    rsa_key: "/root/host_deploy/admin_rsa"
+  tasks:
+    - name: Start message
+      debug:
+        msg: "====START===="
+
+    - name: Determine the type of deployment
+      set_fact:
+        is_proxmox: "{{ (inventory_hostname in groups['proxmox']) | bool }}"
+
+    - name: Copy dump_performance script for Proxmox
+      copy:
+        src: "{{ folder }}/dump_performance_promox.sh"
+        dest: "/usr/sbin/dump_performance.sh"
+      when: is_proxmox
+
+    - name: Copy dump_performance script for ALL
+      copy:
+        src: "{{ folder }}/dump_performance.sh"
+        dest: "/usr/sbin/dump_performance.sh"
+      when: not is_proxmox
+
+    - name: Copy bash.bashrc
+      copy:
+        src: "{{ folder }}/bash.bashrc"
+        dest: "/etc/bash.bashrc"
+
+    - name: Copy shared.common_bashrc_path
+      copy:
+        src: "{{ folder }}/shared.common_bashrc_path"
+        dest: "/etc/shared.common_bashrc_path"
+
+    - name: Copy bashrc
+      copy:
+        src: "{{ folder }}/bashrc"
+        dest: "/root/.bashrc"
+
+    - name: Copy vimrc
+      copy:
+        src: "{{ folder }}/vimrc"
+        dest: "/root/.vimrc"
+
+    - name: Copy toprc
+      copy:
+        src: "{{ folder }}/toprc"
+        dest: "/root/.toprc"
+
+    - name: Copy ubiwan.bashrc
+      copy:
+        src: "{{ folder }}/ubiwan.bashrc"
+        dest: "/etc/ubiwan.bashrc"
+
+    - name: Copy rsyslog_ubiwan.conf
+      copy:
+        src: "{{ folder }}/rsyslog_ubiwan.conf"
+        dest: "/etc/rsyslog.d/ubiwan.conf"
+
+    - name: Copy logrotate_ubiwan.conf
+      copy:
+        src: "{{ folder }}/logrotate_ubiwan.conf"
+        dest: "/etc/logrotate.d/ubiwan.conf"
+
+    - name: Create /var/log/dump_perf/ if NEW
+      file:
+        path: /var/log/dump_perf/
+        state: directory
+      when: "'NEW' in ansible_command_line.args"
+
+    - name: Add crontab entry for dump_performance if NEW and not exists
+      cron:
+        name: "dump_performance"
+        minute: "*/5"
+        job: "/usr/sbin/dump_performance.sh >/dev/null 2>&1"
+        state: present
+      when: "'NEW' in ansible_command_line.args"
+
+    - name: Uncomment en_US in locale.gen if NEW
+      lineinfile:
+        path: /etc/locale.gen
+        regexp: '^# en_US.UTF-8 UTF-8'
+        line: 'en_US.UTF-8 UTF-8'
+      when: "'NEW' in ansible_command_line.args"
+
+    - name: Generate locale-gen if NEW
+      command: /usr/sbin/locale-gen
+      when: "'NEW' in ansible_command_line.args"
+
+    - name: Set timezone to Europe/Paris if NEW
+      timezone:
+        name: Europe/Paris
+      when: "'NEW' in ansible_command_line.args"
+
+    - name: Adjust SNMPD logging if NEW
+      lineinfile:
+        path: /lib/systemd/system/snmpd.service
+        regexp: '{{ item.regexp }}'
+        line: '{{ item.line }}'
+      loop:
+        - { regexp: '-Lsd', line: '-LS0-4d' }
+        - { regexp: '-LOw', line: '-LS0-4d' }
+        - { regexp: '-LS4d', line: '-LS0-4d' }
+        - { regexp: '-Ls4d', line: '-LS0-4d' }
+      when: "'NEW' in ansible_command_line.args"
+
+    - name: Reload systemd if NEW
+      systemd:
+        daemon_reload: yes
+      when: "'NEW' in ansible_command_line.args"
+
+    - name: Enable X11Forwarding in SSHD if NEW
+      lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: 'X11Forwarding no'
+        line: 'X11Forwarding yes'
+      when: "'NEW' in ansible_command_line.args"
+
+    - name: Uncomment X11Forwarding in SSHD if NEW
+      lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: '^# X11Forwarding'
+        line: 'X11Forwarding yes'
+      when: "'NEW' in ansible_command_line.args"
+
+    - name: Add rsyslog configuration if NEW and not exists
+      blockinfile:
+        path: /etc/rsyslog.conf
+        block: |
+          *.* @rsyslog.ubiwan.dmz
+          $Escape8BitCharactersOnReceive on
+      when: "'NEW' in ansible_command_line.args"
+
+    - name: Restart rsyslog if NEW
+      systemd:
+        name: rsyslog
+        state: restarted
+      when: "'NEW' in ansible_command_line.args"
+
+    - name: End message
+      debug:
+        msg: "====END===="

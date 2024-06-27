@@ -1,0 +1,4 @@
+- name: config de la vm via ansible
+- hosts: debian
+  tasks:
+  - name: 
