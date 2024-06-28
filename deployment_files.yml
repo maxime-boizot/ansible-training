@@ -70,7 +70,7 @@
   hosts: test
   tasks:
     - name: rename old version # si il sont different on rename l'ancienne version
-      command: mv /etc/copie.txt /etc/copie.txt.old 
+      command: mv /etc/copie.txt /etc/copie.txt.{{ ansible_date_time.iso8601_basic }}.old 
       when: hostvars['localhost']['md5sum_slave1'] != hostvars['localhost']['md5sum_localhost']
 
     - name: deploy new version of file # on deploie la nouvelle version
