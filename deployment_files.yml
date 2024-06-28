@@ -48,13 +48,16 @@
       set_fact:
         md5sum_localhost: "{{ file_md5_2.stdout.split(' ')[0] }}"  # set fact for md5sum on localhost
 
-    - name: Display the md5sum of the file on slave1
-      debug:
-        msg: "The md5sum of the file on slave1 is {{ hostvars['localhost']['md5sum_slave1'] }}" # display the md5sum of the file on slave1
 
-    - name: Display the md5sum of the file on localhost
-      debug:
-        msg: "The md5sum of the file on localhost is {{ hostvars['localhost']['md5sum_localhost'] }}" # display the md5sum of the file on localhost
+    # non obligatoire -> pour voir les md5sum
+
+    # - name: Display the md5sum of the file on slave1
+    #   debug:
+    #     msg: "The md5sum of the file on slave1 is {{ hostvars['localhost']['md5sum_slave1'] }}" # display the md5sum of the file on slave1
+
+    # - name: Display the md5sum of the file on localhost
+    #   debug:
+    #     msg: "The md5sum of the file on localhost is {{ hostvars['localhost']['md5sum_localhost'] }}" # display the md5sum of the file on localhost
 
     - name: Display if it's the same version of the file
       debug:
