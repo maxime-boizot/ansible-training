@@ -1,0 +1,11 @@
+- name: deb version
+  hosts: test
+  tasks:
+    - name: os version
+      ansible.builtin.setup:
+        filter: ansible_distribution_version
+      register: os_version
+    
+    - name: show os version
+      ansible.builtin.debug:
+        msg: "os version: {{ deb_version.ansible_facts.ansible_distribution_version }}"
